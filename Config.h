@@ -1,0 +1,53 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#include <Arduino.h>
+
+// --- PINES ---
+#define PIN_SCL D1
+#define PIN_SDA D2
+#define PIN_ENC_A D5
+#define PIN_ENC_B D6
+#define PIN_ENC_SW D7
+#define PIN_RELAY_SHUTTER D3
+#define PIN_RELAY_FOCUS D4
+#define PIN_BUZZER D8
+
+// --- ESTRUCTURAS ---
+struct Perfil {
+  char nombre[15];
+  float tiempoEntreFotos;
+  float tiempoObturacion;
+  int limiteFotos;
+};
+
+struct Estadisticas {
+  unsigned long totalFotosHistorico;
+  unsigned long tiempoTotalFunc;
+};
+
+// --- ESTADOS ---
+enum SystemState { 
+ESTADO_INICIO, 
+ESTADO_INICIAR_DETENER, 
+ESTADO_CONFIG, 
+ESTADO_PERFILES, 
+ESTADO_ESTADISTICAS };
+
+enum CameraState { 
+CAM_DETENIDO, 
+CAM_ESPERA_INICIAL, 
+CAM_ENFOCANDO, 
+CAM_OBTURANDO, 
+CAM_INTERVALO };
+
+// --- VARIABLES GLOBALES (externas) ---
+extern SystemState currentState;
+extern CameraState camState;
+extern Perfil perfilActual;
+extern Estadisticas statsGlobales;
+extern int menuIndex; // Para navegar por los menús
+
+const char ALFABETO[] = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-/.";
+
+#endif
