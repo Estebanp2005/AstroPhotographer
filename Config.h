@@ -52,6 +52,8 @@ extern Perfil perfilActual;
 extern Estadisticas statsGlobales;
 extern int menuIndex;
 extern unsigned long tiempoInicioSesion; // Para calcular el "t uso"
+extern int configIndex; // 0: T. Entre, 1: T. Obturación, 2: Límite
+
 
 const char ALFABETO[] = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-/.";
 
