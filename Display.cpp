@@ -218,9 +218,28 @@ void updateDisplay() {
         imprimirTiempo(statsGlobales.tiempoTotalFunc, 6, 1);
         break;
         
-      case ESTADO_CONFIG:
+            case ESTADO_CONFIG:
         lcd.clear();
-        lcd.print("- MODO CONFIG -");
+        lcd.setCursor(0, 0);
+        
+        if (configIndex == 0) {
+          lcd.print("1.T. entre fotos");
+          lcd.setCursor(0, 1);
+          lcd.print(perfilActual.tiempoEntreFotos, 1); // 1 decimal
+          lcd.print(" seg");
+        } 
+        else if (configIndex == 1) {
+          lcd.print("2.T. obturacion");
+          lcd.setCursor(0, 1);
+          lcd.print(perfilActual.tiempoObturacion, 1);
+          lcd.print(" seg");
+        } 
+        else if (configIndex == 2) {
+          lcd.print("3.Corte limite");
+          lcd.setCursor(0, 1);
+          lcd.print(perfilActual.limiteFotos);
+          lcd.print(" fotos");
+        }
         break;
         
       case ESTADO_MENU_PERFILES:
