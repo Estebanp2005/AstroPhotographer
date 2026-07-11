@@ -94,7 +94,42 @@ void updateDisplay() {
         delay(1000); // Muestra mensaje por 1 segundo
         currentState = ESTADO_INICIO; // Vuelve al inicio
       }
-      else if (menuIndex == 2) currentState = ESTADO_CONFIG;
+        else if (currentState == ESTADO_CONFIG) {
+    if (encoderDelta != 0) {
+      // Si giramos rápido (delta >= 2 o <= -2), saltamos de a 1.0. Si no, de a 0.1
+      float incrementoFloat = (abs(encoderDelta) >= 2) ? 1.0 : 0.1;
+      int incrementoInt = (abs(encoderDelta) >= 2) ? 10 : 1; 
+      
+      if (encoderDelta < 0) {
+        incrementoFloat = -incrementoFloat;
+        incrementoInt = -incrementoInt;
+      }
+
+      if (configIndex == 0) {
+        perfilActual.tiempoEntreFotos += incrementoFloat;
+        if (perfilActual.tiempoEntreFotos < 0) perfilActual.tiempoEntreFotos = 0;
+      } 
+      else if (configIndex == 1) {
+        perfilActual.tiempoObturacion += incrementoFloat;
+        if (perfilActual.tiempoObturacion < 0) perfilActual.tiempoObturacion = 0;
+      } 
+      else if (configIndex == 2) {
+        perfilActual.limiteFotos += incrementoInt;
+        if (perfilActual.limiteFotos < 0) perfilActual.limiteFotos = 0;
+      }
+      redraw = true;
+    }
+
+    if (buttonPressed) {
+      configIndex++; // Pasamos a la siguiente opción
+      if (configIndex > 2) {
+        configIndex = 0; // Reiniciamos el índice
+        currentState = ESTADO_MENU_PRINCIPAL; // Volvemos al menú
+      }
+      redraw = true;
+    }
+  }
+
       else if (menuIndex == 3) currentState = ESTADO_MENU_PERFILES;
       else if (menuIndex == 4) currentState = ESTADO_ESTADISTICAS;
       redraw = true;
