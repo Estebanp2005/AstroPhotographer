@@ -3,15 +3,15 @@
 #include "Input.h"
 #include <LiquidCrystal_I2C.h>
 
-LiquidCrystal_I2C lcd(0x27, 16, 2); // Ajustar a 0x3F si la pantalla no enciende
+LiquidCrystal_I2C lcd(0x3F, 16, 2); // Ajustar a 0x3F si la pantalla no enciende
 
 const int NUM_OPCIONES_MENU = 5;
 String menuOpciones[NUM_OPCIONES_MENU] = {
-  "1. Inicio", 
-  "2. Inic/Detener", 
-  "3. Configuracion", 
-  "4. Cargar perfil", 
-  "5. Estadisticas"
+  "1.Inicio", 
+  "2.Inic/Detener", 
+  "3.Configuracion", 
+  "4.Cargar perfil", 
+  "5.Estadisticas"
 };
 
 bool redraw = true; // Solo repintamos la pantalla cuando hay cambios
@@ -43,32 +43,78 @@ void dibujarMenuPrincipal() {
 }
 
 void updateDisplay() {
-  // Lógica global de navegación
+  // 1. Lógica de Navegación (Giro del encoder)
   if (encoderDelta != 0) {
-    if (currentState == ESTADO_INICIO) { // Asumiendo que ESTADO_INICIO es el Menú Principal por ahora
+    if (currentState == ESTADO_INICIO) { 
       menuIndex += (encoderDelta > 0) ? 1 : -1;
-      // Limitar el índice entre 0 y el máximo de opciones
+      
       if (menuIndex < 0) menuIndex = 0;
       if (menuIndex >= NUM_OPCIONES_MENU) menuIndex = NUM_OPCIONES_MENU - 1;
+      
+      redraw = true;
+    }
+    // Más adelante agregaremos qué pasa al girar el encoder DENTRO de los submenús
+  }
+
+  // 2. Lógica de Selección (Clic del botón)
+  if (buttonPressed) {
+    if (currentState == ESTADO_INICIO) {
+      // Entramos al submenú correspondiente
+      if (menuIndex == 0) currentState = ESTADO_INICIO; // Se queda donde está
+      else if (menuIndex == 1) currentState = ESTADO_INICIAR_DETENER;
+      else if (menuIndex == 2) currentState = ESTADO_CONFIG;
+      else if (menuIndex == 3) currentState = ESTADO_PERFILES;
+      else if (menuIndex == 4) currentState = ESTADO_ESTADISTICAS;
+      
+      redraw = true; 
+    } 
+    else {
+      // Si hacemos clic en CUALQUIER otro estado, por ahora volvemos al menú principal
+      currentState = ESTADO_INICIO;
       redraw = true;
     }
   }
 
-  if (buttonPressed) {
-    // Aquí iría la lógica para entrar a cada submenú dependiendo de 'menuIndex'
-    lcd.clear();
-    lcd.print("Seleccion: ");
-    lcd.setCursor(0,1);
-    lcd.print(menuIndex + 1);
-    delay(1000); // Solo para visualizar en la etapa de desarrollo
-    redraw = true;
-  }
-
-  // Máquina de estados de la pantalla
-  switch (currentState) {
-    case ESTADO_INICIO:
-      dibujarMenuPrincipal();
-      break;
-    // case ESTADO_CONFIG: ...
+  // 3. Dibujo de la pantalla según el estado actual
+  if (redraw) {
+    switch (currentState) {
+      case ESTADO_INICIO:
+        dibujarMenuPrincipal();
+        break;
+        
+      case ESTADO_INICIAR_DETENER:
+        lcd.clear();
+        lcd.print("--- CAMARA ---");
+        lcd.setCursor(0,1);
+        lcd.print("Click p/ volver");
+        break;
+        
+      case ESTADO_CONFIG:
+        lcd.clear();
+        lcd.print("--- CONFIG ---");
+        lcd.setCursor(0,1);
+        lcd.print("Click p/ volver");
+        break;
+        
+      case ESTADO_PERFILES:
+        lcd.clear();
+        lcd.print("-- PERFILES --");
+        lcd.setCursor(0,1);
+        lcd.print("Click p/ volver");
+        break;
+        
+      case ESTADO_ESTADISTICAS:
+        lcd.clear();
+        lcd.print("- ESTADISTICAS -");
+        lcd.setCursor(0,1);
+        lcd.print("Click p/ volver");
+        break;
+    }
+    
+    // Si no estamos en el menú de inicio, bajamos la bandera de redibujo
+    // (dibujarMenuPrincipal() ya se encarga de bajar la suya propia)
+    if (currentState != ESTADO_INICIO) {
+      redraw = false; 
+    }
   }
 }

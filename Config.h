@@ -28,25 +28,30 @@ struct Estadisticas {
 
 // --- ESTADOS ---
 enum SystemState { 
-ESTADO_INICIO, 
-ESTADO_INICIAR_DETENER, 
-ESTADO_CONFIG, 
-ESTADO_PERFILES, 
-ESTADO_ESTADISTICAS };
+  ESTADO_INICIO, // El dashboard de uso
+  ESTADO_MENU_PRINCIPAL, 
+  ESTADO_CONFIG, 
+  ESTADO_MENU_PERFILES, 
+  ESTADO_CARGAR_PERFIL,
+  ESTADO_GUARDAR_PERFIL,
+  ESTADO_ESTADISTICAS 
+};
 
 enum CameraState { 
-CAM_DETENIDO, 
-CAM_ESPERA_INICIAL, 
-CAM_ENFOCANDO, 
-CAM_OBTURANDO, 
-CAM_INTERVALO };
+  CAM_DETENIDO,
+  CAM_ESPERA_INICIAL, 
+  CAM_ENFOCANDO, 
+  CAM_OBTURANDO, 
+  CAM_INTERVALO 
+};
 
 // --- VARIABLES GLOBALES (externas) ---
 extern SystemState currentState;
 extern CameraState camState;
 extern Perfil perfilActual;
 extern Estadisticas statsGlobales;
-extern int menuIndex; // Para navegar por los menús
+extern int menuIndex;
+extern unsigned long tiempoInicioSesion; // Para calcular el "t uso"
 
 const char ALFABETO[] = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-/.";
 
