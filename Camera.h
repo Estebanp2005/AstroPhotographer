@@ -4,6 +4,7 @@
 #include <Arduino.h>
 
 extern int fotosTomadasSesion;
+extern unsigned long duracionUltimaSesion;
 
 void initCamera();
 void iniciarSecuencia();
