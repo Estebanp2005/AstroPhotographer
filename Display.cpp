@@ -2,6 +2,7 @@
 #include "Config.h"
 #include "Input.h"
 #include "Camera.h"
+#include "Storage.h" // <--- Agregamos Storage para poder leer los nombres
 #include <LiquidCrystal_I2C.h>
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
@@ -10,6 +11,14 @@ const int NUM_OPCIONES_MENU = 5;
 bool redraw = true;
 unsigned long ultimoCambioDisplay = 0;
 bool mostrarProgreso = false;
+
+// Variables para la navegación de Perfiles
+int subMenuIndex = 0; 
+int editSlot = 0;
+char editBuffer[15];
+int cursorEdit = 2; // Arranca en 2 porque [0] y [1] son el número y el punto ("1.")
+int charIndex = 0;
+char listaNombres[6][15]; // Caché para no leer la memoria en cada vuelta del loop
 
 void initDisplay() {
   lcd.init();
@@ -45,7 +54,7 @@ void dibujarMenuPrincipal() {
     else lcd.print("2.Detener");
   }
   else if (menuIndex == 2) lcd.print("3.Configuracion");
-  else if (menuIndex == 3) lcd.print("4.Cargar perfil");
+  else if (menuIndex == 3) lcd.print("4.Perfiles");
   else if (menuIndex == 4) lcd.print("5.Estadisticas");
 
   if (menuIndex < NUM_OPCIONES_MENU - 1) {
@@ -56,8 +65,15 @@ void dibujarMenuPrincipal() {
       else lcd.print("2.Detener");
     }
     else if (nextIndex == 2) lcd.print("3.Configuracion");
-    else if (nextIndex == 3) lcd.print("4.Cargar perfil");
+    else if (nextIndex == 3) lcd.print("4.Perfiles");
     else if (nextIndex == 4) lcd.print("5.Estadisticas");
+  }
+}
+
+// Función auxiliar para cargar los nombres a la caché antes de mostrarlos
+void cargarCacheNombres() {
+  for(int i = 0; i < 6; i++) {
+    obtenerNombrePerfil(i, listaNombres[i]);
   }
 }
 
@@ -80,7 +96,6 @@ void updateDisplay() {
         if (camState == CAM_DETENIDO) {
           lcd.print("INICIADO");
           iniciarSecuencia();
-          tiempoInicioSesion = millis();
         } else {
           lcd.print("DETENIDO");
           detenerSecuencia();
@@ -89,7 +104,10 @@ void updateDisplay() {
         currentState = ESTADO_INICIO; 
       }
       else if (menuIndex == 2) currentState = ESTADO_CONFIG;
-      else if (menuIndex == 3) currentState = ESTADO_MENU_PERFILES;
+      else if (menuIndex == 3) {
+        subMenuIndex = 0;
+        currentState = ESTADO_MENU_PERFILES;
+      }
       else if (menuIndex == 4) currentState = ESTADO_ESTADISTICAS;
       redraw = true;
     }
@@ -97,7 +115,6 @@ void updateDisplay() {
   
   else if (currentState == ESTADO_CONFIG) {
     if (encoderDelta != 0) {
-      // Sensibilidad ajustada de >= 2 a >= 3
       float incrementoFloat = (abs(encoderDelta) >= 3) ? 1.0 : 0.1;
       int incrementoInt = (abs(encoderDelta) >= 3) ? 10 : 1; 
       
@@ -133,9 +150,9 @@ void updateDisplay() {
 
   else if (currentState == ESTADO_INICIO) {
     if (encoderDelta < 0) {
-       forzarFoto();
+      forzarFoto();
     } else if (encoderDelta > 0) {
-       forzarFoco();
+      forzarFoco();
     }
     
     if (buttonPressed) {
@@ -164,6 +181,111 @@ void updateDisplay() {
     }
   }
 
+  // --- LÓGICA DE NAVEGACIÓN DE PERFILES ---
+  else if (currentState == ESTADO_MENU_PERFILES) {
+    if (encoderDelta != 0) {
+      subMenuIndex += (encoderDelta > 0) ? 1 : -1;
+      if (subMenuIndex < 0) subMenuIndex = 0;
+      if (subMenuIndex > 2) subMenuIndex = 2; // 0: Cargar, 1: Guardar, 2: Volver
+      redraw = true;
+    }
+    
+    if (buttonPressed) {
+      if (subMenuIndex == 0) {
+        cargarCacheNombres();
+        subMenuIndex = 0;
+        currentState = ESTADO_CARGAR_PERFIL;
+      } 
+      else if (subMenuIndex == 1) {
+        cargarCacheNombres();
+        subMenuIndex = 0;
+        currentState = ESTADO_GUARDAR_PERFIL;
+      }
+      else if (subMenuIndex == 2) {
+        currentState = ESTADO_MENU_PRINCIPAL;
+      }
+      redraw = true;
+    }
+  }
+
+  else if (currentState == ESTADO_CARGAR_PERFIL) {
+    if (encoderDelta != 0) {
+      subMenuIndex += (encoderDelta > 0) ? 1 : -1;
+      if (subMenuIndex < 0) subMenuIndex = 0;
+      if (subMenuIndex > 5) subMenuIndex = 5; // 6 slots (0 al 5)
+      redraw = true;
+    }
+    
+    if (buttonPressed) {
+      cargarPerfil(subMenuIndex);
+      
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Perfil cargado!");
+      delay(1000);
+      
+      currentState = ESTADO_MENU_PRINCIPAL;
+      redraw = true;
+    }
+  }
+
+  else if (currentState == ESTADO_GUARDAR_PERFIL) {
+    if (encoderDelta != 0) {
+      subMenuIndex += (encoderDelta > 0) ? 1 : -1;
+      if (subMenuIndex < 0) subMenuIndex = 0;
+      if (subMenuIndex > 5) subMenuIndex = 5;
+      redraw = true;
+    }
+    
+    if (buttonPressed) {
+      editSlot = subMenuIndex;
+      cursorEdit = 2; // Arrancamos a escribir después de "X."
+      charIndex = 0;
+      
+      // Preparamos el buffer de edición
+      snprintf(editBuffer, 15, "%d.            ", editSlot + 1);
+      editBuffer[cursorEdit] = ALFABETO[charIndex]; // Mostramos la primera letra elegible
+      
+      currentState = ESTADO_EDITAR_NOMBRE;
+      redraw = true;
+    }
+  }
+
+  else if (currentState == ESTADO_EDITAR_NOMBRE) {
+    if (encoderDelta != 0) {
+      charIndex += (encoderDelta > 0) ? 1 : -1;
+      int maxChar = strlen(ALFABETO) - 1;
+      if (charIndex < 0) charIndex = maxChar - 1;
+      if (charIndex >= maxChar) charIndex = 0;
+      
+      editBuffer[cursorEdit] = ALFABETO[charIndex];
+      redraw = true;
+    }
+    
+    if (buttonPressed) {
+      cursorEdit++;
+      
+      if (cursorEdit >= 14) { // Llegamos al final (posición 13 es la última visible, 14 sella)
+        editBuffer[14] = '\0';
+        strncpy(perfilActual.nombre, editBuffer, 15);
+        guardarPerfil(editSlot);
+        
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Guardado ok!");
+        delay(1000);
+        
+        currentState = ESTADO_MENU_PRINCIPAL;
+      } else {
+        // Reiniciamos alfabético para la siguiente letra (arranca en espacio)
+        charIndex = 0;
+        editBuffer[cursorEdit] = ALFABETO[charIndex];
+      }
+      redraw = true;
+    }
+  }
+
+  // --- DIBUJADO DE LA PANTALLA ---
   if (redraw) {
     switch (currentState) {
       case ESTADO_MENU_PRINCIPAL:
@@ -208,7 +330,6 @@ void updateDisplay() {
       case ESTADO_CONFIG:
         lcd.clear();
         lcd.setCursor(0, 0);
-        
         if (configIndex == 0) {
           lcd.print("1.T. entre fotos");
           lcd.setCursor(0, 1);
@@ -224,9 +345,8 @@ void updateDisplay() {
         else if (configIndex == 2) {
           lcd.print("3.Corte limite");
           lcd.setCursor(0, 1);
-          // Lógica agregada para mostrar "Apagado"
           if (perfilActual.limiteFotos == 0) {
-            lcd.print("Apagado         "); // Espacios extra para limpiar la pantalla
+            lcd.print("Apagado         "); 
           } else {
             lcd.print(perfilActual.limiteFotos);
             lcd.print(" fotos          ");
@@ -236,9 +356,51 @@ void updateDisplay() {
         
       case ESTADO_MENU_PERFILES:
         lcd.clear();
-        lcd.print("- PERFILES -");
+        lcd.setCursor(0, 0);
+        lcd.print("> ");
+        if (subMenuIndex == 0) lcd.print("1.Cargar");
+        else if (subMenuIndex == 1) lcd.print("2.Guardar");
+        else if (subMenuIndex == 2) lcd.print("3.Volver");
+        break;
+
+      case ESTADO_CARGAR_PERFIL:
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Cargar en slot:");
+        lcd.setCursor(0, 1);
+        lcd.print(">");
+        lcd.print(listaNombres[subMenuIndex]);
+        break;
+
+      case ESTADO_GUARDAR_PERFIL:
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Guardar en slot:");
+        lcd.setCursor(0, 1);
+        lcd.print(">");
+        lcd.print(listaNombres[subMenuIndex]);
+        break;
+
+      case ESTADO_EDITAR_NOMBRE:
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Renombrar:");
+        lcd.setCursor(0, 1);
+        lcd.print(editBuffer);
+        
+        // Efecto visual: Ponemos el cursor parpadeante debajo de la letra activa
+        lcd.setCursor(cursorEdit, 1);
+        lcd.cursor();
+        lcd.blink();
         break;
     }
+    
+    // Si no estamos editando, apagamos el cursor parpadeante por si quedó prendido
+    if (currentState != ESTADO_EDITAR_NOMBRE) {
+      lcd.noBlink();
+      lcd.noCursor();
+    }
+    
     redraw = false;
   }
 }
