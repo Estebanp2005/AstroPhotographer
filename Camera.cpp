@@ -1,23 +1,39 @@
 #include "Camera.h"
 #include "Config.h"
-#include "Storage.h" // <--- Importante para guardar al detener
+#include "Storage.h"
 
 unsigned long previousMillis = 0;
-unsigned long tiempoInicioSesion = 0; // <--- Para medir cuánto duró la sesión activa
+unsigned long tiempoInicioSesion = 0; 
 int fotosTomadasSesion = 0;
+
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 2 
+#endif
+
+// Variables para manejar los pulsos manuales de calibración
+unsigned long timerManualFoco = 0;
+bool focoManualActivo = false;
+unsigned long timerManualFoto = 0;
+bool fotoManualActiva = false;
 
 void initCamera() {
   pinMode(PIN_RELAY_SHUTTER, OUTPUT);
   pinMode(PIN_RELAY_FOCUS, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
+
   digitalWrite(PIN_RELAY_SHUTTER, HIGH); // Active LOW -> Apagado
   digitalWrite(PIN_RELAY_FOCUS, HIGH);
+  digitalWrite(LED_BUILTIN, LOW); 
 }
 
 void iniciarSecuencia() {
-  camState = CAM_ESPERA_INICIAL;
+  camState = CAM_OBTURANDO; // Arrancamos directo a sacar foto, sin delay inicial
   previousMillis = millis();
-  tiempoInicioSesion = millis(); // Guardamos el momento exacto de inicio
+  tiempoInicioSesion = millis(); 
   fotosTomadasSesion = 0;
+  
+  digitalWrite(PIN_RELAY_SHUTTER, LOW); 
+  digitalWrite(LED_BUILTIN, HIGH); 
 }
 
 void detenerSecuencia() {
@@ -26,62 +42,71 @@ void detenerSecuencia() {
   camState = CAM_DETENIDO;
   digitalWrite(PIN_RELAY_SHUTTER, HIGH);
   digitalWrite(PIN_RELAY_FOCUS, HIGH);
+  digitalWrite(LED_BUILTIN, LOW); 
   
-  // --- ACTUALIZACIÓN DE ESTADÍSTICAS HISTÓRICAS ---
-  // 1. Sumamos las fotos de esta sesión al total histórico
   statsGlobales.totalFotosHistorico += fotosTomadasSesion;
-  
-  // 2. Calculamos los segundos que estuvo corriendo y los sumamos
   unsigned long segundosCorriendo = (millis() - tiempoInicioSesion) / 1000UL;
   statsGlobales.tiempoTotalFunc += segundosCorriendo;
-  
-  // 3. Guardamos en EEPROM una sola vez al terminar la noche
   guardarEstadisticas();
 }
 
-void updateCamera() {
-  if (camState == CAM_DETENIDO) return;
+// --- FUNCIONES DE CALIBRACIÓN MANUAL ---
+void forzarFoto() {
+  if (camState != CAM_DETENIDO) return; // Por seguridad, solo funciona si la secuencia está detenida
+  digitalWrite(PIN_RELAY_SHUTTER, LOW);
+  digitalWrite(LED_BUILTIN, HIGH);
+  fotoManualActiva = true;
+  timerManualFoto = millis();
+}
 
+void forzarFoco() {
+  if (camState != CAM_DETENIDO) return;
+  digitalWrite(PIN_RELAY_FOCUS, LOW);
+  focoManualActivo = true;
+  timerManualFoco = millis();
+}
+
+void updateCamera() {
   unsigned long currentMillis = millis();
 
-  switch (camState) {
-    case CAM_ESPERA_INICIAL:
-      if (currentMillis - previousMillis >= 3000) { // 3 segundos de espera inicial
-        camState = CAM_ENFOCANDO;
-        digitalWrite(PIN_RELAY_FOCUS, LOW); // Enciende foco
-        previousMillis = currentMillis;
-      }
-      break;
+  // 1. Lógica Automática (Secuencia)
+  if (camState != CAM_DETENIDO) {
+    switch (camState) {
+      case CAM_OBTURANDO:
+        if (currentMillis - previousMillis >= (perfilActual.tiempoObturacion * 1000UL)) {
+          camState = CAM_INTERVALO;
+          digitalWrite(PIN_RELAY_SHUTTER, HIGH); 
+          digitalWrite(LED_BUILTIN, LOW); 
+          
+          fotosTomadasSesion++;
+          previousMillis = currentMillis;
 
-    case CAM_ENFOCANDO:
-      if (currentMillis - previousMillis >= 1000) { // 1 segundo de foco
-        camState = CAM_OBTURANDO;
-        digitalWrite(PIN_RELAY_SHUTTER, LOW); // Dispara foto
-        previousMillis = currentMillis;
-      }
-      break;
-
-    case CAM_OBTURANDO:
-      if (currentMillis - previousMillis >= (perfilActual.tiempoObturacion * 1000UL)) {
-        camState = CAM_INTERVALO;
-        digitalWrite(PIN_RELAY_SHUTTER, HIGH); // Apaga disparo
-        digitalWrite(PIN_RELAY_FOCUS, HIGH);   // Apaga foco
-        fotosTomadasSesion++;
-        previousMillis = currentMillis;
-
-        // Comprobar límite de fotos
-        if (perfilActual.limiteFotos > 0 && fotosTomadasSesion >= perfilActual.limiteFotos) {
-          detenerSecuencia();
+          if (perfilActual.limiteFotos > 0 && fotosTomadasSesion >= perfilActual.limiteFotos) {
+            detenerSecuencia();
+          }
         }
-      }
-      break;
+        break;
 
-    case CAM_INTERVALO:
-      if (currentMillis - previousMillis >= (perfilActual.tiempoEntreFotos * 1000UL)) {
-        camState = CAM_ENFOCANDO;
-        digitalWrite(PIN_RELAY_FOCUS, LOW);
-        previousMillis = currentMillis;
-      }
-      break;
+      case CAM_INTERVALO:
+        if (currentMillis - previousMillis >= (perfilActual.tiempoEntreFotos * 1000UL)) {
+          camState = CAM_OBTURANDO;
+          digitalWrite(PIN_RELAY_SHUTTER, LOW);
+          digitalWrite(LED_BUILTIN, HIGH); 
+          previousMillis = currentMillis;
+        }
+        break;
+    }
+  }
+
+  // 2. Lógica Manual (Apaga los relés tras 2 segundos)
+  if (focoManualActivo && (currentMillis - timerManualFoco >= 2000)) {
+    digitalWrite(PIN_RELAY_FOCUS, HIGH);
+    focoManualActivo = false;
+  }
+  
+  if (fotoManualActiva && (currentMillis - timerManualFoto >= 2000)) {
+    digitalWrite(PIN_RELAY_SHUTTER, HIGH);
+    digitalWrite(LED_BUILTIN, LOW);
+    fotoManualActiva = false;
   }
 }
