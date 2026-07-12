@@ -10,7 +10,7 @@
 #define PIN_ENC_B D6
 #define PIN_ENC_SW D7
 #define PIN_RELAY_SHUTTER D3
-#define PIN_RELAY_FOCUS D4
+#define PIN_RELAY_FOCUS D0
 #define PIN_BUZZER D8
 
 // --- ESTRUCTURAS ---
