@@ -28,12 +28,13 @@ struct Estadisticas {
 
 // --- ESTADOS ---
 enum SystemState { 
-  ESTADO_INICIO, // El dashboard de uso
+  ESTADO_INICIO, 
   ESTADO_MENU_PRINCIPAL, 
   ESTADO_CONFIG, 
   ESTADO_MENU_PERFILES, 
   ESTADO_CARGAR_PERFIL,
   ESTADO_GUARDAR_PERFIL,
+  ESTADO_EDITAR_NOMBRE, // <--- NUEVO: Para tipear letra por letra
   ESTADO_ESTADISTICAS 
 };
 
