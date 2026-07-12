@@ -54,3 +54,21 @@ void guardarPerfil(int slot) {
   // Guardamos toda la estructura de una sola vez
   prefs.putBytes(key, &perfilActual, sizeof(Perfil));
 }
+
+void obtenerNombrePerfil(int slot, char* buffer) {
+  if (slot < 0 || slot >= 6) return;
+  
+  char key[10];
+  snprintf(key, sizeof(key), "prf%d", slot);
+  
+  if (!prefs.isKey(key)) {
+    // Si no hay nada guardado, devuelve "1. Vacio", etc.
+    snprintf(buffer, 15, "%d. Vacio", slot + 1);
+  } else {
+    // Si hay datos, leemos el perfil temporalmente y robamos el nombre
+    Perfil temp;
+    prefs.getBytes(key, &temp, sizeof(Perfil));
+    strncpy(buffer, temp.nombre, 15);
+    buffer[14] = '\0'; // Terminador de seguridad
+  }
+}
