@@ -34,7 +34,7 @@ enum SystemState {
   ESTADO_MENU_PERFILES, 
   ESTADO_CARGAR_PERFIL,
   ESTADO_GUARDAR_PERFIL,
-  ESTADO_EDITAR_NOMBRE, // <--- NUEVO: Para tipear letra por letra
+  ESTADO_EDITAR_NOMBRE,
   ESTADO_ESTADISTICAS 
 };
 
@@ -52,9 +52,8 @@ extern CameraState camState;
 extern Perfil perfilActual;
 extern Estadisticas statsGlobales;
 extern int menuIndex;
-extern unsigned long tiempoInicioSesion; // Para calcular el "t uso"
-extern int configIndex; // 0: T. Entre, 1: T. Obturación, 2: Límite
-
+extern unsigned long tiempoInicioSesion;
+extern int configIndex;
 
 const char ALFABETO[] = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-/.";
 
