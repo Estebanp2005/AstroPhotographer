@@ -133,9 +133,9 @@ void updateDisplay() {
 
   else if (currentState == ESTADO_INICIO) {
     if (encoderDelta < 0) {
-      // forzarFoto();
+       forzarFoto();
     } else if (encoderDelta > 0) {
-      // forzarFoco();
+       forzarFoco();
     }
     
     if (buttonPressed) {
