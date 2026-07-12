@@ -2,7 +2,7 @@
 #include "Config.h"
 #include "Input.h"
 #include "Camera.h"
-#include "Storage.h" // <--- Agregamos Storage para poder leer los nombres
+#include "Storage.h"
 #include <LiquidCrystal_I2C.h>
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
@@ -12,13 +12,12 @@ bool redraw = true;
 unsigned long ultimoCambioDisplay = 0;
 bool mostrarProgreso = false;
 
-// Variables para la navegación de Perfiles
 int subMenuIndex = 0; 
 int editSlot = 0;
 char editBuffer[15];
-int cursorEdit = 2; // Arranca en 2 porque [0] y [1] son el número y el punto ("1.")
+int cursorEdit = 2; 
 int charIndex = 0;
-char listaNombres[6][15]; // Caché para no leer la memoria en cada vuelta del loop
+char listaNombres[6][15]; 
 
 void initDisplay() {
   lcd.init();
@@ -70,7 +69,6 @@ void dibujarMenuPrincipal() {
   }
 }
 
-// Función auxiliar para cargar los nombres a la caché antes de mostrarlos
 void cargarCacheNombres() {
   for(int i = 0; i < 6; i++) {
     obtenerNombrePerfil(i, listaNombres[i]);
@@ -181,12 +179,11 @@ void updateDisplay() {
     }
   }
 
-  // --- LÓGICA DE NAVEGACIÓN DE PERFILES ---
   else if (currentState == ESTADO_MENU_PERFILES) {
     if (encoderDelta != 0) {
       subMenuIndex += (encoderDelta > 0) ? 1 : -1;
       if (subMenuIndex < 0) subMenuIndex = 0;
-      if (subMenuIndex > 2) subMenuIndex = 2; // 0: Cargar, 1: Guardar, 2: Volver
+      if (subMenuIndex > 2) subMenuIndex = 2;
       redraw = true;
     }
     
@@ -212,7 +209,7 @@ void updateDisplay() {
     if (encoderDelta != 0) {
       subMenuIndex += (encoderDelta > 0) ? 1 : -1;
       if (subMenuIndex < 0) subMenuIndex = 0;
-      if (subMenuIndex > 5) subMenuIndex = 5; // 6 slots (0 al 5)
+      if (subMenuIndex > 5) subMenuIndex = 5; 
       redraw = true;
     }
     
@@ -239,12 +236,11 @@ void updateDisplay() {
     
     if (buttonPressed) {
       editSlot = subMenuIndex;
-      cursorEdit = 2; // Arrancamos a escribir después de "X."
+      cursorEdit = 2;
       charIndex = 0;
       
-      // Preparamos el buffer de edición
       snprintf(editBuffer, 15, "%d.            ", editSlot + 1);
-      editBuffer[cursorEdit] = ALFABETO[charIndex]; // Mostramos la primera letra elegible
+      editBuffer[cursorEdit] = ALFABETO[charIndex]; 
       
       currentState = ESTADO_EDITAR_NOMBRE;
       redraw = true;
@@ -265,7 +261,7 @@ void updateDisplay() {
     if (buttonPressed) {
       cursorEdit++;
       
-      if (cursorEdit >= 14) { // Llegamos al final (posición 13 es la última visible, 14 sella)
+      if (cursorEdit >= 14) { 
         editBuffer[14] = '\0';
         strncpy(perfilActual.nombre, editBuffer, 15);
         guardarPerfil(editSlot);
@@ -277,7 +273,6 @@ void updateDisplay() {
         
         currentState = ESTADO_MENU_PRINCIPAL;
       } else {
-        // Reiniciamos alfabético para la siguiente letra (arranca en espacio)
         charIndex = 0;
         editBuffer[cursorEdit] = ALFABETO[charIndex];
       }
@@ -299,8 +294,22 @@ void updateDisplay() {
             lcd.setCursor(0, 0);
             lcd.print("Fts: "); lcd.print(fotosTomadasSesion);
             lcd.print("/"); lcd.print(perfilActual.limiteFotos);
+            
+            // Lógica real de la barra de progreso
             lcd.setCursor(0, 1);
-            lcd.print("[=====>      ]"); 
+            lcd.print("[");
+            int numBloques = 0;
+            if (perfilActual.limiteFotos > 0) {
+              numBloques = (fotosTomadasSesion * 14) / perfilActual.limiteFotos;
+            }
+            if (numBloques > 14) numBloques = 14; // Límite de seguridad
+            
+            for (int i = 0; i < 14; i++) {
+              if (i < numBloques) lcd.print("=");
+              else if (i == numBloques && numBloques < 14 && camState != CAM_DETENIDO) lcd.print(">");
+              else lcd.print(" ");
+            }
+            lcd.print("]");
           } else {
             lcd.setCursor(0, 0);
             lcd.print("Fts: "); lcd.print(fotosTomadasSesion);
@@ -364,21 +373,16 @@ void updateDisplay() {
         break;
 
       case ESTADO_CARGAR_PERFIL:
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Cargar en slot:");
-        lcd.setCursor(0, 1);
-        lcd.print(">");
-        lcd.print(listaNombres[subMenuIndex]);
-        break;
-
       case ESTADO_GUARDAR_PERFIL:
+        // Ambos menús ahora usan 2 renglones como el menú principal
         lcd.clear();
         lcd.setCursor(0, 0);
-        lcd.print("Guardar en slot:");
-        lcd.setCursor(0, 1);
         lcd.print(">");
         lcd.print(listaNombres[subMenuIndex]);
+        if (subMenuIndex < 5) { // Si hay una opción siguiente, la dibujamos
+          lcd.setCursor(1, 1);
+          lcd.print(listaNombres[subMenuIndex + 1]);
+        }
         break;
 
       case ESTADO_EDITAR_NOMBRE:
@@ -388,14 +392,13 @@ void updateDisplay() {
         lcd.setCursor(0, 1);
         lcd.print(editBuffer);
         
-        // Efecto visual: Ponemos el cursor parpadeante debajo de la letra activa
         lcd.setCursor(cursorEdit, 1);
-        lcd.cursor();
-        lcd.blink();
+        lcd.cursor();  // Pone el guion bajo
+        lcd.noBlink(); // Asegura que el bloque negro esté apagado
         break;
     }
     
-    // Si no estamos editando, apagamos el cursor parpadeante por si quedó prendido
+    // Apaga el cursor si salimos del modo edición
     if (currentState != ESTADO_EDITAR_NOMBRE) {
       lcd.noBlink();
       lcd.noCursor();
