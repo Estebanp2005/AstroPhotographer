@@ -299,12 +299,13 @@ void updateDisplay() {
       case ESTADO_INICIO:
         lcd.clear();
         {
-          static unsigned long tUsoMostrado = 0;
+          unsigned long tUsoMostrado = 0;
           
           if (camState != CAM_DETENIDO) {
             tUsoMostrado = millis() - tiempoInicioSesion;
-          } else if (fotosTomadasSesion == 0) {
-            tUsoMostrado = 0; 
+          } else {
+            // Si está detenido, leemos el tiempo EXACTO que grabó Camera.cpp
+            tUsoMostrado = duracionUltimaSesion;
           }
 
           // Solo mostramos barra si hay límite Y la cámara está activa
@@ -341,7 +342,7 @@ void updateDisplay() {
           }
         }
         break;
-
+      
       case ESTADO_ESTADISTICAS:
         lcd.clear();
         lcd.setCursor(0, 0);
