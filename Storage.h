@@ -6,5 +6,6 @@ void cargarEstadisticas();
 void guardarEstadisticas();
 void cargarPerfil(int slot);
 void guardarPerfil(int slot);
+void obtenerNombrePerfil(int slot, char* buffer);
 
 #endif
