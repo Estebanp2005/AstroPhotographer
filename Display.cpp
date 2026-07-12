@@ -64,9 +64,6 @@ void dibujarMenuPrincipal() {
 void updateDisplay() {
   unsigned long currentMillis = millis();
 
-  // --- 1. LÓGICA DE NAVEGACIÓN Y ENTRADAS ---
-  
-  // A. Estando en el Menú Principal
   if (currentState == ESTADO_MENU_PRINCIPAL) {
     if (encoderDelta != 0) {
       menuIndex += (encoderDelta > 0) ? 1 : -1;
@@ -91,18 +88,18 @@ void updateDisplay() {
         delay(1000); 
         currentState = ESTADO_INICIO; 
       }
-      else if (menuIndex == 2) currentState = ESTADO_CONFIG; // ¡Esta línea faltaba!
+      else if (menuIndex == 2) currentState = ESTADO_CONFIG;
       else if (menuIndex == 3) currentState = ESTADO_MENU_PERFILES;
       else if (menuIndex == 4) currentState = ESTADO_ESTADISTICAS;
       redraw = true;
     }
   } 
   
-  // B. Estando en Configuración (Este bloque estaba mal pegado)
   else if (currentState == ESTADO_CONFIG) {
     if (encoderDelta != 0) {
-      float incrementoFloat = (abs(encoderDelta) >= 2) ? 1.0 : 0.1;
-      int incrementoInt = (abs(encoderDelta) >= 2) ? 10 : 1; 
+      // Sensibilidad ajustada de >= 2 a >= 3
+      float incrementoFloat = (abs(encoderDelta) >= 3) ? 1.0 : 0.1;
+      int incrementoInt = (abs(encoderDelta) >= 3) ? 10 : 1; 
       
       if (encoderDelta < 0) {
         incrementoFloat = -incrementoFloat;
@@ -134,7 +131,6 @@ void updateDisplay() {
     }
   }
 
-  // C. Estando en Inicio (Dashboard)
   else if (currentState == ESTADO_INICIO) {
     if (encoderDelta < 0) {
       // forzarFoto();
@@ -161,7 +157,6 @@ void updateDisplay() {
     }
   }
   
-  // D. Estando en Estadísticas
   else if (currentState == ESTADO_ESTADISTICAS) {
     if (buttonPressed) {
       currentState = ESTADO_MENU_PRINCIPAL;
@@ -169,8 +164,6 @@ void updateDisplay() {
     }
   }
 
-  // --- 2. DIBUJO DE PANTALLA ---
-  
   if (redraw) {
     switch (currentState) {
       case ESTADO_MENU_PRINCIPAL:
@@ -231,8 +224,13 @@ void updateDisplay() {
         else if (configIndex == 2) {
           lcd.print("3.Corte limite");
           lcd.setCursor(0, 1);
-          lcd.print(perfilActual.limiteFotos);
-          lcd.print(" fotos");
+          // Lógica agregada para mostrar "Apagado"
+          if (perfilActual.limiteFotos == 0) {
+            lcd.print("Apagado         "); // Espacios extra para limpiar la pantalla
+          } else {
+            lcd.print(perfilActual.limiteFotos);
+            lcd.print(" fotos          ");
+          }
         }
         break;
         
