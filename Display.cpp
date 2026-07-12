@@ -179,12 +179,11 @@ void updateDisplay() {
     }
   }
 
-  // --- NAVEGACIÓN MENÚ PERFILES (Cargar / Guardar / Volver) ---
   else if (currentState == ESTADO_MENU_PERFILES) {
     if (encoderDelta != 0) {
       subMenuIndex += (encoderDelta > 0) ? 1 : -1;
       if (subMenuIndex < 0) subMenuIndex = 0;
-      if (subMenuIndex > 2) subMenuIndex = 2; // 0, 1, 2
+      if (subMenuIndex > 2) subMenuIndex = 2;
       redraw = true;
     }
     
@@ -201,23 +200,22 @@ void updateDisplay() {
       }
       else if (subMenuIndex == 2) {
         currentState = ESTADO_MENU_PRINCIPAL;
-        menuIndex = 3; // Volvemos a quedar parados sobre "4.Perfiles"
+        menuIndex = 3; 
       }
       redraw = true;
     }
   }
 
-  // --- NAVEGACIÓN CARGAR PERFIL ---
   else if (currentState == ESTADO_CARGAR_PERFIL) {
     if (encoderDelta != 0) {
       subMenuIndex += (encoderDelta > 0) ? 1 : -1;
       if (subMenuIndex < 0) subMenuIndex = 0;
-      if (subMenuIndex > 6) subMenuIndex = 6; // 0 al 5 (slots) + 6 (Volver)
+      if (subMenuIndex > 6) subMenuIndex = 6; 
       redraw = true;
     }
     
     if (buttonPressed) {
-      if (subMenuIndex == 6) { // Seleccionó "Volver"
+      if (subMenuIndex == 6) { 
         currentState = ESTADO_MENU_PERFILES;
         subMenuIndex = 0; 
       } else {
@@ -232,19 +230,18 @@ void updateDisplay() {
     }
   }
 
-  // --- NAVEGACIÓN GUARDAR PERFIL ---
   else if (currentState == ESTADO_GUARDAR_PERFIL) {
     if (encoderDelta != 0) {
       subMenuIndex += (encoderDelta > 0) ? 1 : -1;
       if (subMenuIndex < 0) subMenuIndex = 0;
-      if (subMenuIndex > 6) subMenuIndex = 6; // 0 al 5 (slots) + 6 (Volver)
+      if (subMenuIndex > 6) subMenuIndex = 6; 
       redraw = true;
     }
     
     if (buttonPressed) {
-      if (subMenuIndex == 6) { // Seleccionó "Volver"
+      if (subMenuIndex == 6) { 
         currentState = ESTADO_MENU_PERFILES;
-        subMenuIndex = 1; // Lo dejamos parado sobre "Guardar"
+        subMenuIndex = 1; 
       } else {
         editSlot = subMenuIndex;
         cursorEdit = 2;
@@ -259,7 +256,6 @@ void updateDisplay() {
     }
   }
 
-  // --- NAVEGACIÓN EDITAR NOMBRE ---
   else if (currentState == ESTADO_EDITAR_NOMBRE) {
     if (encoderDelta != 0) {
       charIndex += (encoderDelta > 0) ? 1 : -1;
@@ -303,42 +299,45 @@ void updateDisplay() {
       case ESTADO_INICIO:
         lcd.clear();
         {
-          // Calculamos el tiempo de uso real (siempre en 0 si está detenido)
-          unsigned long tUso = (camState == CAM_DETENIDO) ? 0 : (millis() - tiempoInicioSesion);
+          static unsigned long tUsoMostrado = 0;
           
-          if (perfilActual.limiteFotos > 0) {
-            if (mostrarProgreso) {
-              lcd.setCursor(0, 0);
-              lcd.print("Fts: "); lcd.print(fotosTomadasSesion);
-              lcd.print("/"); lcd.print(perfilActual.limiteFotos);
-              
-              lcd.setCursor(0, 1);
-              lcd.print("[");
-              int numBloques = 0;
-              if (perfilActual.limiteFotos > 0) {
-                numBloques = (fotosTomadasSesion * 14) / perfilActual.limiteFotos;
-              }
-              if (numBloques > 14) numBloques = 14; 
-              
-              for (int i = 0; i < 14; i++) {
-                if (i < numBloques) lcd.print("=");
-                else if (i == numBloques && numBloques < 14 && camState != CAM_DETENIDO) lcd.print(">");
-                else lcd.print(" ");
-              }
-              lcd.print("]");
-            } else {
-              lcd.setCursor(0, 0);
-              lcd.print("Fts: "); lcd.print(fotosTomadasSesion);
-              lcd.setCursor(0, 1);
-              lcd.print("t uso:");
-              imprimirTiempo(tUso, 7, 1);
-            }
-          } else {
+          if (camState != CAM_DETENIDO) {
+            tUsoMostrado = millis() - tiempoInicioSesion;
+          } else if (fotosTomadasSesion == 0) {
+            tUsoMostrado = 0; 
+          }
+
+          // Solo mostramos barra si hay límite Y la cámara está activa
+          bool mostrarBarra = (perfilActual.limiteFotos > 0) && (camState != CAM_DETENIDO) && mostrarProgreso;
+
+          if (mostrarBarra) {
             lcd.setCursor(0, 0);
             lcd.print("Fts: "); lcd.print(fotosTomadasSesion);
+            lcd.print("/"); lcd.print(perfilActual.limiteFotos);
+            
             lcd.setCursor(0, 1);
-            lcd.print("t uso: ");
-            imprimirTiempo(tUso, 7, 1);
+            lcd.print("[");
+            int numBloques = 0;
+            if (perfilActual.limiteFotos > 0) {
+              numBloques = (fotosTomadasSesion * 14) / perfilActual.limiteFotos;
+            }
+            if (numBloques > 14) numBloques = 14; 
+            
+            for (int i = 0; i < 14; i++) {
+              if (i < numBloques) lcd.print("=");
+              else if (i == numBloques && numBloques < 14 && camState != CAM_DETENIDO) lcd.print(">");
+              else lcd.print(" ");
+            }
+            lcd.print("]");
+          } else {
+            lcd.setCursor(0, 0);
+            lcd.print("Fts:"); lcd.print(fotosTomadasSesion);
+            if (perfilActual.limiteFotos > 0) {
+              lcd.print("/"); lcd.print(perfilActual.limiteFotos);
+            }
+            lcd.setCursor(0, 1);
+            lcd.print("t uso:");
+            imprimirTiempo(tUsoMostrado, 7, 1);
           }
         }
         break;
