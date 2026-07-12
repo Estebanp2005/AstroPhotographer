@@ -1,57 +1,56 @@
 #include "Storage.h"
 #include "Config.h"
-#include <EEPROM.h>
+#include <Preferences.h>
 
-// Definimos dónde empieza cada cosa en la memoria emulada
-const int ADDR_STATS = 0;
-const int ADDR_PROFILES_START = sizeof(Estadisticas); // Arranca justo después de las estadísticas
+Preferences prefs;
 
 void initStorage() {
-  EEPROM.begin(512); // Reservamos 512 bytes de la flash (más que suficiente)
+  // Abre el "espacio" de memoria llamado "astro". 
+  // El false significa modo Lectura/Escritura.
+  prefs.begin("astro", false); 
   cargarEstadisticas();
 }
 
 void cargarEstadisticas() {
-  EEPROM.get(ADDR_STATS, statsGlobales);
-  
-  // Si la placa es completamente nueva, la flash viene llena de "255" (0xFFFFFFFF).
-  // Si detectamos esto, inicializamos las estadísticas en cero.
-  if (statsGlobales.totalFotosHistorico == 0xFFFFFFFF) {
-    statsGlobales.totalFotosHistorico = 0;
-    statsGlobales.tiempoTotalFunc = 0;
-    guardarEstadisticas();
-  }
+  // Si no encuentra la clave, devuelve 0 por defecto
+  statsGlobales.totalFotosHistorico = prefs.getULong("totFotos", 0);
+  statsGlobales.tiempoTotalFunc = prefs.getULong("tFunc", 0);
 }
 
 void guardarEstadisticas() {
-  EEPROM.put(ADDR_STATS, statsGlobales);
-  EEPROM.commit(); // ¡Obligatorio en ESP8266 para guardar físicamente!
+  prefs.putULong("totFotos", statsGlobales.totalFotosHistorico);
+  prefs.putULong("tFunc", statsGlobales.tiempoTotalFunc);
+  // Preferences guarda automáticamente sin necesidad de "commit"
 }
 
 void cargarPerfil(int slot) {
-  if (slot < 0 || slot >= 6) return; // Validación de seguridad (6 slots: 0 al 5)
+  if (slot < 0 || slot >= 6) return; // Validación de seguridad (slots 0 al 5)
   
-  int direccion = ADDR_PROFILES_START + (slot * sizeof(Perfil));
-  EEPROM.get(direccion, perfilActual);
-  
-  // Si el slot está vacío o corrupto, le cargamos valores por defecto seguros
-  if (perfilActual.nombre[0] == 0xFF || perfilActual.nombre[0] == '\0') {
+  char key[10];
+  snprintf(key, sizeof(key), "prf%d", slot); // Genera la clave: prf0, prf1...
+
+  // Si la clave no existe, cargamos un perfil limpio por defecto
+  if (!prefs.isKey(key)) {
     snprintf(perfilActual.nombre, sizeof(perfilActual.nombre), "%d. Vacio", slot + 1);
     perfilActual.tiempoEntreFotos = 5.0;
     perfilActual.tiempoObturacion = 2.0;
     perfilActual.limiteFotos = 0;
+  } else {
+    // Si existe, leemos los bytes directos y rellenamos la estructura
+    prefs.getBytes(key, &perfilActual, sizeof(Perfil));
   }
 }
 
 void guardarPerfil(int slot) {
   if (slot < 0 || slot >= 6) return;
   
-  int direccion = ADDR_PROFILES_START + (slot * sizeof(Perfil));
+  char key[10];
+  snprintf(key, sizeof(key), "prf%d", slot);
   
-  // Forzamos que los dos primeros caracteres sean el slot ("1.", "2.", etc.) como pediste
+  // Forzamos que los dos primeros caracteres sean el número de slot ("1.", "2.")
   perfilActual.nombre[0] = '1' + slot;
   perfilActual.nombre[1] = '.';
   
-  EEPROM.put(direccion, perfilActual);
-  EEPROM.commit(); // Guardamos en la flash
+  // Guardamos toda la estructura de una sola vez
+  prefs.putBytes(key, &perfilActual, sizeof(Perfil));
 }
