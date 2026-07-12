@@ -179,11 +179,12 @@ void updateDisplay() {
     }
   }
 
+  // --- NAVEGACIÓN MENÚ PERFILES (Cargar / Guardar / Volver) ---
   else if (currentState == ESTADO_MENU_PERFILES) {
     if (encoderDelta != 0) {
       subMenuIndex += (encoderDelta > 0) ? 1 : -1;
       if (subMenuIndex < 0) subMenuIndex = 0;
-      if (subMenuIndex > 2) subMenuIndex = 2;
+      if (subMenuIndex > 2) subMenuIndex = 2; // 0, 1, 2
       redraw = true;
     }
     
@@ -200,53 +201,65 @@ void updateDisplay() {
       }
       else if (subMenuIndex == 2) {
         currentState = ESTADO_MENU_PRINCIPAL;
+        menuIndex = 3; // Volvemos a quedar parados sobre "4.Perfiles"
       }
       redraw = true;
     }
   }
 
+  // --- NAVEGACIÓN CARGAR PERFIL ---
   else if (currentState == ESTADO_CARGAR_PERFIL) {
     if (encoderDelta != 0) {
       subMenuIndex += (encoderDelta > 0) ? 1 : -1;
       if (subMenuIndex < 0) subMenuIndex = 0;
-      if (subMenuIndex > 5) subMenuIndex = 5; 
+      if (subMenuIndex > 6) subMenuIndex = 6; // 0 al 5 (slots) + 6 (Volver)
       redraw = true;
     }
     
     if (buttonPressed) {
-      cargarPerfil(subMenuIndex);
-      
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Perfil cargado!");
-      delay(1000);
-      
-      currentState = ESTADO_MENU_PRINCIPAL;
+      if (subMenuIndex == 6) { // Seleccionó "Volver"
+        currentState = ESTADO_MENU_PERFILES;
+        subMenuIndex = 0; 
+      } else {
+        cargarPerfil(subMenuIndex);
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Perfil cargado!");
+        delay(1000);
+        currentState = ESTADO_MENU_PRINCIPAL;
+      }
       redraw = true;
     }
   }
 
+  // --- NAVEGACIÓN GUARDAR PERFIL ---
   else if (currentState == ESTADO_GUARDAR_PERFIL) {
     if (encoderDelta != 0) {
       subMenuIndex += (encoderDelta > 0) ? 1 : -1;
       if (subMenuIndex < 0) subMenuIndex = 0;
-      if (subMenuIndex > 5) subMenuIndex = 5;
+      if (subMenuIndex > 6) subMenuIndex = 6; // 0 al 5 (slots) + 6 (Volver)
       redraw = true;
     }
     
     if (buttonPressed) {
-      editSlot = subMenuIndex;
-      cursorEdit = 2;
-      charIndex = 0;
-      
-      snprintf(editBuffer, 15, "%d.            ", editSlot + 1);
-      editBuffer[cursorEdit] = ALFABETO[charIndex]; 
-      
-      currentState = ESTADO_EDITAR_NOMBRE;
+      if (subMenuIndex == 6) { // Seleccionó "Volver"
+        currentState = ESTADO_MENU_PERFILES;
+        subMenuIndex = 1; // Lo dejamos parado sobre "Guardar"
+      } else {
+        editSlot = subMenuIndex;
+        cursorEdit = 2;
+        charIndex = 0;
+        
+        snprintf(editBuffer, 15, "%d.            ", editSlot + 1);
+        editBuffer[cursorEdit] = ALFABETO[charIndex]; 
+        
+        currentState = ESTADO_EDITAR_NOMBRE;
+      }
       redraw = true;
     }
   }
 
+  // --- NAVEGACIÓN EDITAR NOMBRE ---
   else if (currentState == ESTADO_EDITAR_NOMBRE) {
     if (encoderDelta != 0) {
       charIndex += (encoderDelta > 0) ? 1 : -1;
@@ -289,40 +302,44 @@ void updateDisplay() {
 
       case ESTADO_INICIO:
         lcd.clear();
-        if (perfilActual.limiteFotos > 0) {
-          if (mostrarProgreso) {
-            lcd.setCursor(0, 0);
-            lcd.print("Fts: "); lcd.print(fotosTomadasSesion);
-            lcd.print("/"); lcd.print(perfilActual.limiteFotos);
-            
-            // Lógica real de la barra de progreso
-            lcd.setCursor(0, 1);
-            lcd.print("[");
-            int numBloques = 0;
-            if (perfilActual.limiteFotos > 0) {
-              numBloques = (fotosTomadasSesion * 14) / perfilActual.limiteFotos;
+        {
+          // Calculamos el tiempo de uso real (siempre en 0 si está detenido)
+          unsigned long tUso = (camState == CAM_DETENIDO) ? 0 : (millis() - tiempoInicioSesion);
+          
+          if (perfilActual.limiteFotos > 0) {
+            if (mostrarProgreso) {
+              lcd.setCursor(0, 0);
+              lcd.print("Fts: "); lcd.print(fotosTomadasSesion);
+              lcd.print("/"); lcd.print(perfilActual.limiteFotos);
+              
+              lcd.setCursor(0, 1);
+              lcd.print("[");
+              int numBloques = 0;
+              if (perfilActual.limiteFotos > 0) {
+                numBloques = (fotosTomadasSesion * 14) / perfilActual.limiteFotos;
+              }
+              if (numBloques > 14) numBloques = 14; 
+              
+              for (int i = 0; i < 14; i++) {
+                if (i < numBloques) lcd.print("=");
+                else if (i == numBloques && numBloques < 14 && camState != CAM_DETENIDO) lcd.print(">");
+                else lcd.print(" ");
+              }
+              lcd.print("]");
+            } else {
+              lcd.setCursor(0, 0);
+              lcd.print("Fts: "); lcd.print(fotosTomadasSesion);
+              lcd.setCursor(0, 1);
+              lcd.print("t uso:");
+              imprimirTiempo(tUso, 7, 1);
             }
-            if (numBloques > 14) numBloques = 14; // Límite de seguridad
-            
-            for (int i = 0; i < 14; i++) {
-              if (i < numBloques) lcd.print("=");
-              else if (i == numBloques && numBloques < 14 && camState != CAM_DETENIDO) lcd.print(">");
-              else lcd.print(" ");
-            }
-            lcd.print("]");
           } else {
             lcd.setCursor(0, 0);
             lcd.print("Fts: "); lcd.print(fotosTomadasSesion);
             lcd.setCursor(0, 1);
-            lcd.print("t uso:");
-            imprimirTiempo(millis() - tiempoInicioSesion, 7, 1);
+            lcd.print("t uso: ");
+            imprimirTiempo(tUso, 7, 1);
           }
-        } else {
-          lcd.setCursor(0, 0);
-          lcd.print("Fts: "); lcd.print(fotosTomadasSesion);
-          lcd.setCursor(0, 1);
-          lcd.print("t uso: ");
-          imprimirTiempo((camState == CAM_DETENIDO) ? 0 : (millis() - tiempoInicioSesion), 7, 1);
         }
         break;
 
@@ -366,23 +383,36 @@ void updateDisplay() {
       case ESTADO_MENU_PERFILES:
         lcd.clear();
         lcd.setCursor(0, 0);
-        lcd.print("> ");
+        lcd.print(">");
         if (subMenuIndex == 0) lcd.print("1.Cargar");
         else if (subMenuIndex == 1) lcd.print("2.Guardar");
         else if (subMenuIndex == 2) lcd.print("3.Volver");
+
+        if (subMenuIndex < 2) {
+          lcd.setCursor(1, 1);
+          if (subMenuIndex + 1 == 1) lcd.print("2.Guardar");
+          else if (subMenuIndex + 1 == 2) lcd.print("3.Volver");
+        }
         break;
 
       case ESTADO_CARGAR_PERFIL:
-      case ESTADO_GUARDAR_PERFIL:
-        // Ambos menús ahora usan 2 renglones como el menú principal
         lcd.clear();
         lcd.setCursor(0, 0);
+        lcd.print("Cargar en slot:");
+        lcd.setCursor(0, 1);
         lcd.print(">");
-        lcd.print(listaNombres[subMenuIndex]);
-        if (subMenuIndex < 5) { // Si hay una opción siguiente, la dibujamos
-          lcd.setCursor(1, 1);
-          lcd.print(listaNombres[subMenuIndex + 1]);
-        }
+        if (subMenuIndex == 6) lcd.print("7. Volver");
+        else lcd.print(listaNombres[subMenuIndex]);
+        break;
+
+      case ESTADO_GUARDAR_PERFIL:
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Guardar en slot:");
+        lcd.setCursor(0, 1);
+        lcd.print(">");
+        if (subMenuIndex == 6) lcd.print("7. Volver");
+        else lcd.print(listaNombres[subMenuIndex]);
         break;
 
       case ESTADO_EDITAR_NOMBRE:
@@ -393,12 +423,11 @@ void updateDisplay() {
         lcd.print(editBuffer);
         
         lcd.setCursor(cursorEdit, 1);
-        lcd.cursor();  // Pone el guion bajo
-        lcd.noBlink(); // Asegura que el bloque negro esté apagado
+        lcd.cursor(); 
+        lcd.noBlink(); 
         break;
     }
     
-    // Apaga el cursor si salimos del modo edición
     if (currentState != ESTADO_EDITAR_NOMBRE) {
       lcd.noBlink();
       lcd.noCursor();
