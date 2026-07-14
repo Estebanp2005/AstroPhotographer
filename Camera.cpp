@@ -6,7 +6,7 @@
 CameraState camState = CAM_DETENIDO;
 int fotosTomadasSesion = 0;
 unsigned long tiempoInicioSesion = 0;
-unsigned long duracionUltimaSesion = 0; // <--- NUEVA VARIABLE GLOBAL
+unsigned long duracionUltimaSesion = 0; 
 
 unsigned long ultimoEventoCamera = 0;
 
@@ -15,14 +15,15 @@ void initCamera() {
   pinMode(PIN_RELAY_FOCUS, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
   
-  digitalWrite(PIN_RELAY_SHUTTER, LOW);
-  digitalWrite(PIN_RELAY_FOCUS, LOW);
+  // LOGICA INVERSA: HIGH apaga los relés
+  digitalWrite(PIN_RELAY_SHUTTER, HIGH); 
+  digitalWrite(PIN_RELAY_FOCUS, HIGH);
   digitalWrite(LED_BUILTIN, HIGH); 
 }
 
 void iniciarSecuencia() {
   fotosTomadasSesion = 0;
-  duracionUltimaSesion = 0; // <--- REINICIAMOS EL CRONOMETRO FINAL
+  duracionUltimaSesion = 0; 
   tiempoInicioSesion = millis();
   ultimoEventoCamera = millis();
   
@@ -30,14 +31,14 @@ void iniciarSecuencia() {
 }
 
 void detenerSecuencia() {
-  digitalWrite(PIN_RELAY_SHUTTER, LOW);
-  digitalWrite(PIN_RELAY_FOCUS, LOW);
+  // HIGH apaga el relé
+  digitalWrite(PIN_RELAY_SHUTTER, HIGH);
+  digitalWrite(PIN_RELAY_FOCUS, HIGH);
   digitalWrite(LED_BUILTIN, HIGH);
   
   camState = CAM_DETENIDO;
 
-  // Calculamos el tiempo de uso al momento EXACTO de frenar
-  duracionUltimaSesion = (unsigned long)(millis() - tiempoInicioSesion);
+  duracionUltimaSesion = (unsigned long)(millis() - tiempoInicioSesion); 
   
   statsGlobales.tiempoTotalFunc += duracionUltimaSesion;
   statsGlobales.totalFotosHistorico += fotosTomadasSesion;
@@ -56,7 +57,8 @@ void updateCamera() {
         camState = CAM_OBTURANDO;
         ultimoEventoCamera = currentMillis;
         
-        digitalWrite(PIN_RELAY_SHUTTER, HIGH);
+        // LOW enciende el relé
+        digitalWrite(PIN_RELAY_SHUTTER, LOW);
         digitalWrite(LED_BUILTIN, LOW); 
       }
       break;
@@ -64,7 +66,8 @@ void updateCamera() {
     case CAM_OBTURANDO:
       if (currentMillis - ultimoEventoCamera >= (perfilActual.tiempoObturacion * 1000UL)) {
         
-        digitalWrite(PIN_RELAY_SHUTTER, LOW);
+        // HIGH apaga el relé
+        digitalWrite(PIN_RELAY_SHUTTER, HIGH);
         digitalWrite(LED_BUILTIN, HIGH); 
         
         fotosTomadasSesion++;
@@ -72,6 +75,7 @@ void updateCamera() {
 
         if (perfilActual.limiteFotos > 0 && fotosTomadasSesion >= perfilActual.limiteFotos) {
           detenerSecuencia(); 
+          // ACÁ FUTURAMENTE HAREMOS SONAR EL "TIRURIN"
         } else {
           camState = CAM_INTERVALO; 
         }
@@ -83,7 +87,8 @@ void updateCamera() {
         camState = CAM_OBTURANDO;
         ultimoEventoCamera = currentMillis;
         
-        digitalWrite(PIN_RELAY_SHUTTER, HIGH);
+        // LOW enciende el relé
+        digitalWrite(PIN_RELAY_SHUTTER, LOW);
         digitalWrite(LED_BUILTIN, LOW); 
       }
       break;
@@ -92,16 +97,16 @@ void updateCamera() {
 
 void forzarFoto() {
   if (camState != CAM_DETENIDO) return; 
-  digitalWrite(PIN_RELAY_SHUTTER, HIGH);
+  digitalWrite(PIN_RELAY_SHUTTER, LOW); // Enciende
   digitalWrite(LED_BUILTIN, LOW);
   delay(500); 
-  digitalWrite(PIN_RELAY_SHUTTER, LOW);
+  digitalWrite(PIN_RELAY_SHUTTER, HIGH); // Apaga
   digitalWrite(LED_BUILTIN, HIGH);
 }
 
 void forzarFoco() {
   if (camState != CAM_DETENIDO) return; 
-  digitalWrite(PIN_RELAY_FOCUS, HIGH);
+  digitalWrite(PIN_RELAY_FOCUS, LOW); // Enciende
   delay(500); 
-  digitalWrite(PIN_RELAY_FOCUS, LOW);
+  digitalWrite(PIN_RELAY_FOCUS, HIGH); // Apaga
 }
