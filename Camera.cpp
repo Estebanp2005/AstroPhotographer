@@ -37,7 +37,7 @@ void detenerSecuencia() {
   camState = CAM_DETENIDO;
 
   // Calculamos el tiempo de uso al momento EXACTO de frenar
-  duracionUltimaSesion = millis() - tiempoInicioSesion; // <--- GUARDAMOS EL FINAL AQUI
+  duracionUltimaSesion = (unsigned long)(millis() - tiempoInicioSesion);
   
   statsGlobales.tiempoTotalFunc += duracionUltimaSesion;
   statsGlobales.totalFotosHistorico += fotosTomadasSesion;
