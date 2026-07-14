@@ -14,11 +14,13 @@ void initCamera() {
   pinMode(PIN_RELAY_SHUTTER, OUTPUT);
   pinMode(PIN_RELAY_FOCUS, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(PIN_BUZZER, OUTPUT); // <--- INICIALIZAMOS EL BUZZER
   
   // LOGICA INVERSA: HIGH apaga los relés
   digitalWrite(PIN_RELAY_SHUTTER, HIGH); 
   digitalWrite(PIN_RELAY_FOCUS, HIGH);
   digitalWrite(LED_BUILTIN, HIGH); 
+  digitalWrite(PIN_BUZZER, LOW); // <--- BUZZER APAGADO (Lógica normal)
 }
 
 void iniciarSecuencia() {
@@ -31,7 +33,7 @@ void iniciarSecuencia() {
 }
 
 void detenerSecuencia() {
-  // HIGH apaga el relé
+  // HIGH apaga los relés
   digitalWrite(PIN_RELAY_SHUTTER, HIGH);
   digitalWrite(PIN_RELAY_FOCUS, HIGH);
   digitalWrite(LED_BUILTIN, HIGH);
@@ -44,6 +46,16 @@ void detenerSecuencia() {
   statsGlobales.totalFotosHistorico += fotosTomadasSesion;
   
   guardarEstadisticas();
+}
+
+// <--- NUEVA FUNCIÓN PARA EL AVISO SONORO --->
+void sonarAlarmaFin() {
+  for (int i = 0; i < 3; i++) {
+    digitalWrite(PIN_BUZZER, HIGH); // Suena
+    delay(150);                     // Por 150 milisegundos
+    digitalWrite(PIN_BUZZER, LOW);  // Se calla
+    delay(100);                     // Pausa cortita
+  }
 }
 
 void updateCamera() {
@@ -75,7 +87,7 @@ void updateCamera() {
 
         if (perfilActual.limiteFotos > 0 && fotosTomadasSesion >= perfilActual.limiteFotos) {
           detenerSecuencia(); 
-          // ACÁ FUTURAMENTE HAREMOS SONAR EL "TIRURIN"
+          sonarAlarmaFin(); // <--- LLAMAMOS AL RITMO ACA, AL TERMINAR
         } else {
           camState = CAM_INTERVALO; 
         }
