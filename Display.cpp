@@ -54,7 +54,7 @@ void initDisplay() {
   lcd.setCursor(0, 0);
   lcd.print(" AstroTracker ");
   lcd.setCursor(0, 1);
-  lcd.print(" Iniciando... ");
+  lcd.print("By: Estebanp2005");
   delay(1500); 
   lcd.clear();
 }
