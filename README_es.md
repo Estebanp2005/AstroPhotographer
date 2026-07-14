@@ -59,7 +59,7 @@ Para compilar este proyecto en el Arduino IDE, es necesario tener instalado el s
 ## Diagrama de Flujo del Menú
 
 *(Inserta aquí tu imagen de KiCad o tu diagrama de flujo para visualizar la navegación del menú)*
-![Diagrama de Flujo de AstroTracker](docs/flowchart.png)
+![Diagrama de Flujo de AstroTracker](docs/flowchart_es.png)
 
 ---
 
