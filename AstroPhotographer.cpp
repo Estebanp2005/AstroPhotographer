@@ -6,7 +6,6 @@
 
 // Instanciación de variables
 SystemState currentState = ESTADO_INICIO;
-CameraState camState = CAM_DETENIDO;
 Perfil perfilActual; // Ahora se cargará desde la EEPROM
 Estadisticas statsGlobales;
 int menuIndex = 0;
