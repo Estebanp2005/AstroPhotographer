@@ -1,3 +1,11 @@
+/**
+ * @file Display.cpp
+ * @brief Implementation of the LCD User Interface and Menu System.
+ * * This file manages the 16x2 I2C LCD screen. It handles UI rendering,
+ * interprets encoder inputs to navigate menus, and executes state transitions.
+ * It uses a 'redraw' flag to update the screen only when necessary, preventing flicker.
+ */
+
 #include "Display.h"
 #include "Config.h"
 #include "Input.h"
@@ -5,20 +13,41 @@
 #include "Storage.h"
 #include <LiquidCrystal_I2C.h>
 
+// --- Hardware Instantiation ---
+
+/** @brief I2C LCD object (Address 0x3F, 16 columns, 2 rows). */
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
 
+// --- Global UI Variables ---
+
 const int NUM_OPCIONES_MENU = 5;
+
+/** @brief Flag to trigger an LCD update only when the UI state changes. */
 bool redraw = true;
+
+/** @brief Timestamp for toggling the progress bar display. */
 unsigned long ultimoCambioDisplay = 0;
+
+/** @brief Toggles between showing the progress bar and the session timer. */
 bool mostrarProgreso = false;
 
+// Sub-menu navigation variables
 int subMenuIndex = 0; 
 int editSlot = 0;
+
+// Profile naming variables
 char editBuffer[15];
 int cursorEdit = 2; 
 int charIndex = 0;
+
+/** @brief Cache array to store profile names for smooth menu scrolling. */
 char listaNombres[6][15]; 
 
+// --- Helper Functions ---
+
+/**
+ * @brief Initializes the LCD and shows the boot splash screen.
+ */
 void initDisplay() {
   lcd.init();
   lcd.backlight();
@@ -30,6 +59,12 @@ void initDisplay() {
   lcd.clear();
 }
 
+/**
+ * @brief Formats and prints a millisecond timestamp as HH:MM:SS on the LCD.
+ * * @param milisegundos Time in milliseconds.
+ * @param col Starting LCD column.
+ * @param row LCD row (0 or 1).
+ */
 void imprimirTiempo(unsigned long milisegundos, int col, int row) {
   unsigned long segundosTotales = milisegundos / 1000;
   int h = segundosTotales / 3600;
@@ -42,11 +77,15 @@ void imprimirTiempo(unsigned long milisegundos, int col, int row) {
   lcd.print(buffer);
 }
 
+/**
+ * @brief Renders the main menu, dynamically showing the selected item and the next one.
+ */
 void dibujarMenuPrincipal() {
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print(">");
   
+  // Render current selected item
   if (menuIndex == 0) lcd.print("1.Inicio");
   else if (menuIndex == 1) {
     if (camState == CAM_DETENIDO) lcd.print("2.Iniciar");
@@ -56,6 +95,7 @@ void dibujarMenuPrincipal() {
   else if (menuIndex == 3) lcd.print("4.Perfiles");
   else if (menuIndex == 4) lcd.print("5.Estadisticas");
 
+  // Render the next available item on the second line
   if (menuIndex < NUM_OPCIONES_MENU - 1) {
     lcd.setCursor(1, 1);
     int nextIndex = menuIndex + 1;
@@ -69,14 +109,27 @@ void dibujarMenuPrincipal() {
   }
 }
 
+/**
+ * @brief Loads the names of all 6 stored profiles into RAM to speed up menu rendering.
+ */
 void cargarCacheNombres() {
   for(int i = 0; i < 6; i++) {
     obtenerNombrePerfil(i, listaNombres[i]);
   }
 }
 
+// --- Main UI Loop ---
+
+/**
+ * @brief Core UI state machine. Evaluates encoder inputs and handles screen rendering.
+ * Must be called continuously in the main loop().
+ */
 void updateDisplay() {
   unsigned long currentMillis = millis();
+
+  // ==========================================
+  // INPUT HANDLING & LOGIC PER STATE
+  // ==========================================
 
   if (currentState == ESTADO_MENU_PRINCIPAL) {
     if (encoderDelta != 0) {
@@ -113,6 +166,7 @@ void updateDisplay() {
   
   else if (currentState == ESTADO_CONFIG) {
     if (encoderDelta != 0) {
+      // Dynamic acceleration: turn encoder fast to increment by larger steps
       float incrementoFloat = (abs(encoderDelta) >= 3) ? 1.0 : 0.1;
       int incrementoInt = (abs(encoderDelta) >= 3) ? 10 : 1; 
       
@@ -159,12 +213,14 @@ void updateDisplay() {
       redraw = true;
     }
 
+    // Toggle between progress bar and stats every 2 seconds if active and limited
     if (perfilActual.limiteFotos > 0 && (currentMillis - ultimoCambioDisplay >= 2000)) {
       mostrarProgreso = !mostrarProgreso;
       ultimoCambioDisplay = currentMillis;
       redraw = true;
     }
     
+    // Force a 1-second refresh for the active timer
     static unsigned long ultimoSeg = 0;
     if (currentMillis - ultimoSeg >= 1000) {
       ultimoSeg = currentMillis;
@@ -289,7 +345,10 @@ void updateDisplay() {
     }
   }
 
-  // --- DIBUJADO DE LA PANTALLA ---
+  // ==========================================
+  // SCREEN RENDERING (Only if redraw == true)
+  // ==========================================
+
   if (redraw) {
     switch (currentState) {
       case ESTADO_MENU_PRINCIPAL:
@@ -304,11 +363,11 @@ void updateDisplay() {
           if (camState != CAM_DETENIDO) {
             tUsoMostrado = millis() - tiempoInicioSesion;
           } else {
-            // Si está detenido, leemos el tiempo EXACTO que grabó Camera.cpp
+            // Read the EXACT stored time if the camera is stopped
             tUsoMostrado = duracionUltimaSesion;
           }
 
-          // Solo mostramos barra si hay límite Y la cámara está activa
+          // Show the animated progress bar only if limited and active
           bool mostrarBarra = (perfilActual.limiteFotos > 0) && (camState != CAM_DETENIDO) && mostrarProgreso;
 
           if (mostrarBarra) {
@@ -342,7 +401,7 @@ void updateDisplay() {
           }
         }
         break;
-      
+        
       case ESTADO_ESTADISTICAS:
         lcd.clear();
         lcd.setCursor(0, 0);
@@ -422,12 +481,14 @@ void updateDisplay() {
         lcd.setCursor(0, 1);
         lcd.print(editBuffer);
         
+        // Show the cursor block under the active character
         lcd.setCursor(cursorEdit, 1);
         lcd.cursor(); 
         lcd.noBlink(); 
         break;
     }
     
+    // Ensure the cursor is hidden when exiting edit mode
     if (currentState != ESTADO_EDITAR_NOMBRE) {
       lcd.noBlink();
       lcd.noCursor();
