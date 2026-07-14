@@ -58,8 +58,7 @@ To compile this project in the Arduino IDE, you must install the ESP8266 board s
 
 ## Menu Flowchart
 
-*(Add your KiCad or flowchart image here to visualize the menu navigation)*
-![AstroTracker Menu Flowchart](docs/flowchart.png)
+![AstroTracker Menu Flowchart](docs/flowchart_en.png)
 
 ---
 
