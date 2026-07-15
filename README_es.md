@@ -29,6 +29,12 @@
 
 ## Esquema de Conexiones (Pinout)
 
+### Diagrama de Conexiones Hardware
+![Esquema de conexiones del AstroTracker](docs/diagram.png)
+
+### Conexion del Jack 2.5 (para camara Canon)
+![Conexion del Jack 2.5 (para camara Canon)](docs/jackConnector.png)
+
 La siguiente tabla describe la conexión de los periféricos a los pines GPIO del ESP8266 según la configuración del firmware:
 
 | Componente | Pin del Componente | Pin ESP8266 |
@@ -44,6 +50,7 @@ La siguiente tabla describe la conexión de los periféricos a los pines GPIO de
 
 > **Nota:** Asegúrese de proveer la alimentación adecuada (VCC 3.3V/5V y GND) a la pantalla LCD, al encoder rotativo y al módulo de relés utilizando las salidas de alimentación de la placa o una fuente externa regulada.
 
+> **Nota del autor:** Lo se, esto es un lio, estoy trabajando en una proxima version sin display usando bluetooth, cualquier ayuda es bien recibida.
 ---
 
 ## Dependencias y Librerías de Software
