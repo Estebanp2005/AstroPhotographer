@@ -29,6 +29,12 @@
 
 ## Wiring Schematic (Pinout)
 
+### Hardware Wiring Diagram
+![AstroTracker wiring diagram](docs/diagram.png)
+
+### Canon camera jack connection
+![Canon camera jack connection](docs/jackConnector.png)
+
 The following table describes the connection of the peripherals to the ESP8266 GPIO pins according to the firmware configuration:
 
 | Component | Component Pin | ESP8266 Pin |
