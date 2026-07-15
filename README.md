@@ -50,6 +50,7 @@ The following table describes the connection of the peripherals to the ESP8266 G
 
 > **Note:** Ensure proper power supply (VCC 3.3V/5V and GND) to the LCD, rotary encoder, and relay module using the board's power outputs or an external regulated power source.
 
+> **Author's note:** I know, this is a bit of a mess; I'm working on a future version that uses Bluetooth instead of a display. Any help is welcome.
 ---
 
 ## Software Dependencies & Libraries
