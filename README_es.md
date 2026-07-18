@@ -1,8 +1,8 @@
-# AstroTracker
+# AstroPhotographer 
 
 *Leer esto en otros idiomas: [English](README.md)*
 
-**AstroTracker** es un intervalómetro avanzado y automatizado diseñado específicamente para la astrofotografía. Basado en el microcontrolador ESP8266, este dispositivo permite el control preciso del obturador y el enfoque de cámaras DSLR o Mirrorless mediante un sistema de relés, ofreciendo una gestión integral de sesiones fotográficas largas.
+**AstroPhotographer** es un intervalómetro avanzado y automatizado diseñado específicamente para la astrofotografía. Basado en el microcontrolador ESP8266, este dispositivo permite el control preciso del obturador y el enfoque de cámaras DSLR o Mirrorless mediante un sistema de relés, ofreciendo una gestión integral de sesiones fotográficas largas.
 
 ## Características Principales
 
