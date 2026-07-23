@@ -50,6 +50,14 @@ The following table describes the connection of the peripherals to the ESP8266 G
 
 > **Note:** Ensure proper power supply (VCC 3.3V/5V and GND) to the LCD, rotary encoder, and relay module using the board's power outputs or an external regulated power source.
 
+### Hardware ssembly
+My hardware assembly
+| **Perfboard (Top View)** | **Perfboard (Soldering)** | **Case Mounting (1)** |
+| :---: | :---: | :---: |
+| ![Top View](docs/assembly1.jpg) | ![Soldering](docs/assembly2.jpg) | ![Layout](docs/assembly3.jpg) |
+| **Case Mounting (2)** | **Case Mounting (3)** | **Final Assembly** |
+| ![Mounting 1](docs/assembly4.jpg) | ![Mounting 2](docs/assembly5.jpg) | ![Final](docs/assembly6.jpg) |
+
 > **Author's note:** I know, this is a bit of a mess; I'm working on a future version that uses Bluetooth instead of a display. Any help is welcome.
 ---
 
