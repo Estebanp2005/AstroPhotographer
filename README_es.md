@@ -50,6 +50,14 @@ La siguiente tabla describe la conexión de los periféricos a los pines GPIO de
 
 > **Nota:** Asegúrese de proveer la alimentación adecuada (VCC 3.3V/5V y GND) a la pantalla LCD, al encoder rotativo y al módulo de relés utilizando las salidas de alimentación de la placa o una fuente externa regulada.
 
+### Ensamblaje del Hardware
+Mi proceso de ensamblaje:
+| **Placa Perforada (Vista Superior)** | **Placa Perforada (Soldaduras)** | **Montaje en Carcasa (1)** |
+| :---: | :---: | :---: |
+| ![Vista Superior](docs/assembly1.jpg) | ![Soldaduras](docs/assembly2.jpg) | ![Disposición](docs/assembly3.jpg) |
+| **Montaje en Carcasa (2)** | **Montaje en Carcasa (3)** | **Ensamblaje Final** |
+| ![Montaje 1](docs/assembly4.jpg) | ![Montaje 2](docs/assembly5.jpg) | ![Final](docs/assembly6.jpg) |
+
 > **Nota del autor:** Lo se, esto es un lio, estoy trabajando en una proxima version sin display usando bluetooth, cualquier ayuda es bien recibida.
 ---
 
